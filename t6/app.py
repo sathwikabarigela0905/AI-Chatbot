@@ -1,31 +1,54 @@
 import streamlit as st
-from dotenv import load_dotenv
-import os
 from google import genai
-load_dotenv()
-api_key=os.getenv("GEMINI_API_KEY")
-client=genai.client(api_key=api_key)
-st.set_page_config(
-    page_title="Gemini AI Chatbot",
-    page_icon="🤖"
-    layout="centered"
 
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
+
+st.title("🤖 My AI Chatbot")
+st.write("Ask anything and AI will respond.")
+
+# Connect to Gemini
+client = genai.Client(
+    api_key=st.secrets["GEMINI_API_KEY"]
 )
-st.title("Gemini AI Chatbot")
-st.write("Ask Gemini anything!")
-prompt = st.text_area(
-    "Enter your prompt:",
-    placeholder="Explain Artificial Intelligence in simple words..."
-)
-if st.button(Generate Response"):
-             if prompt:
-                 with st.spinner("Gemini is thinking..."):
-                 response = client.models.generate_content(
-                     model = "gemini-3.5-flash-lite",
-                     contents=prompt
-                 )
-                 st.success("Response generated!")
-                 st.write(response.text)
-            else:
-            
-             st.warning("please enter a prompt.")
+
+# Store chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display previous messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+# Get user input
+user_input = st.chat_input("Type your message...")
+
+if user_input:
+    # Display user message
+    with st.chat_message("user"):
+        st.write(user_input)
+
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_input
+    })
+
+    # Generate AI response
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=user_input
+        )
+
+        ai_message = response.text
+
+        with st.chat_message("assistant"):
+            st.write(ai_message)
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": ai_message
+        })
+
+    except Exception as e:
+        st.error(f"Error generating answer: {e}")
